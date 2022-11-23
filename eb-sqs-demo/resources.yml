@@ -1,0 +1,5 @@
+# Create eventbridge eventbus
+EventBus:
+  Type: AWS::Events::EventBus
+  Properties: 
+    Name: QR_EVENT_BUS

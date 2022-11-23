@@ -1,0 +1,21 @@
+service: eb-sqs-demo
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-1
+
+functions:
+  putEventsLambda:
+    handler: functions/putEvents.handler
+
+# you can add CloudFormation resource templates here
+resources:
+ Resources: ${file(resources.yml)}
+
+ Outputs:
+    NewOutput:
+      Description: "Description for the output"
+      Value: "Some output value"

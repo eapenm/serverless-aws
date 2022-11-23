@@ -1,0 +1,20 @@
+{
+  "name": "notes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "handler.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-jwt-verify": "^3.2.0",
+    "aws-sdk": "^2.1255.0"
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "serverless-iam-roles-per-function": "^3.2.0"
+  }
+}
