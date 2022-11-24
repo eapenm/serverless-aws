@@ -4,18 +4,47 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: dev
+  stage: dev 
   region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: events:PutEvents
+          Resource: !GetAtt EventBus.Arn
+
+custom:
+  apiGatewayServiceProxies:
+    - eventbridge:
+        path: /eventbridge
+        method: post
+        source: 'fuel-app'
+        detailType: 'user-signup'
+        eventBusName: { Ref: EventBus }
+        cors: true
 
 functions:
+  processEventsLambda:
+    handler: functions/processEvent.handler
+    events:
+      - sqs: 
+          arn: !GetAtt TargetSQS.Arn
+          batchSize: 10
+          functionResponseType: "ReportBatchItemFailures"
   putEventsLambda:
     handler: functions/putEvents.handler
+    environment:
+      EventBusName: !Ref EventBus
+    events:
+      - http:
+          path: /generate
+          method: post
 
-# you can add CloudFormation resource templates here
 resources:
  Resources: ${file(resources.yml)}
-
  Outputs:
-    NewOutput:
-      Description: "Description for the output"
-      Value: "Some output value"
+    EventBusName:
+      Value: !Ref EventBus
+
+plugins:
+  - serverless-apigateway-service-proxy
