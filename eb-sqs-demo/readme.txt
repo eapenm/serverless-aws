@@ -1,0 +1,1 @@
+install proxy plugin:serverless plugin install -n serverless-apigateway-service-proxy
