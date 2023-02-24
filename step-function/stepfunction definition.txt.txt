@@ -1,0 +1,153 @@
+{
+  "StartAt": "checkInventory",
+  "States": {
+    "checkInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:560321588640:function:step-function-dev-checkInventory",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "BookNotFound"
+          ],
+          "Next": "BookNotFoundError"
+        },
+        {
+          "ErrorEquals": [
+            "BookOutOfStock"
+          ],
+          "Next": "BookOutOfStockError"
+        }
+      ],
+      "ResultPath": "$.book",
+      "Next": "calculateTotal"
+    },
+    "calculateTotal": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:560321588640:function:step-function-dev-calculateTotal",
+      "ResultPath": "$.total",
+      "Next": "isRedeemNeeded"
+    },
+    "isRedeemNeeded": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.redeem",
+          "BooleanEquals": true,
+          "Next": "RedeemPoints"
+        }
+      ],
+      "Default": "BillCustomer"
+    },
+    "RedeemPoints": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:560321588640:function:step-function-dev-redeemPoints",
+      "ResultPath": "$.total",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "RedeemPointsError"
+        }
+      ],
+      "Next": "BillCustomer"
+    },
+    "BillCustomer": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:560321588640:function:step-function-dev-billCustomer",
+      "ResultPath": "$.billingStatus",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "MaxAttempts": 0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.customerBilling",
+          "Next": "BillingError"
+        }
+      ],
+      "Next": "PrepareOrder"
+    },
+    "PrepareOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/560321588640/OrdersQueue",
+        "MessageBody": {
+          "Input.$": "$",
+          "Token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": "$.courierStatus",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "NoCourierAvailable"
+          ],
+          "ResultPath": "$.courierError",
+          "Next": "RefundCustomer"
+        }
+      ],
+      "Next": "DispatchOrder"
+    },
+    "DispatchOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:560321588640:NotifyCourier",
+        "Message.$": "$"
+      },
+      "Next": "Dispatched"
+    },
+    "Dispatched": {
+      "Type": "Pass",
+      "Result": "Your order will be dispatched in 24 hours",
+      "End": true
+    },
+    "RestoreQuantity": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:560321588640:function:step-function-dev-restoreQuantity",
+      "ResultPath": "$.quantityRestoreStatus",
+      "Next": "RestoreRedeemPoints"
+    },
+    "RefundCustomer": {
+      "Type": "Pass",
+      "Result": "Customer is refunded",
+      "ResultPath": "$.refundStatus",
+      "Next": "RestoreQuantity"
+    },
+    "BookNotFoundError": {
+      "Type": "Pass",
+      "Result": "No such book available",
+      "End": true
+    },
+    "BookOutOfStockError": {
+      "Type": "Pass",
+      "Result": "Sorry, the books is out of stock",
+      "End": true
+    },
+    "RedeemPointsError": {
+      "Type": "Pass",
+      "Result": "Error in redeeming points",
+      "End": true
+    },
+    "BillingError": {
+      "Type": "Pass",
+      "Result": "Billing error",
+      "ResultPath": "$.billingStatus",
+      "Next": "RestoreRedeemPoints"
+    },
+    "RestoreRedeemPoints": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:560321588640:function:step-function-dev-restoreRedeemPoints",
+      "End": true
+    }
+  }
+}
