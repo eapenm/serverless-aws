@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'customerapi
+
+  Sample SAM Template for customerapi
+
+  '
+Globals:
+  Function:
+    Runtime: java11
+    Architectures:
+    - x86_64
+    MemorySize: 512
+    Timeout: 60
+    Environment:
+      Variables:
+        CUSTOMER_TABLE:
+          Ref: CustomerTable
+Resources:
+  CustomerTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: firstName
+        Type: String
+  CreateCustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CreateCustomerFunction
+      Handler: com.aws.lambda.api.CreateCustomerLambda::createCustomer
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: CustomerTable
+      Events:
+        CustomerEvents:
+          Type: Api
+          Properties:
+            Path: /customer
+            Method: post
+    Metadata:
+      SamResourceId: CreateCustomerFunction
+  ReadCustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ReadCustomerFunction
+      Handler: com.aws.lambda.api.ReadCustomerLambda::getCustomer
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: CustomerTable
+      Events:
+        CustomerEvents:
+          Type: Api
+          Properties:
+            Path: /customer
+            Method: get
+    Metadata:
+      SamResourceId: ReadCustomerFunction

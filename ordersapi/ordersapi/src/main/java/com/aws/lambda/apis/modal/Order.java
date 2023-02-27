@@ -4,6 +4,7 @@ public class Order {
 	private int id;
 	private String itemName;
 	private int quantity;
+
 	public int getId() {
 		return id;
 	}
@@ -23,7 +24,7 @@ public class Order {
 		this.quantity = quantity;
 	}
 
-	/*
+
 	public Order() {
 		
 	}
@@ -32,6 +33,6 @@ public class Order {
 		this.itemName = itemName;
 		this.quantity = quantity;
 	}
-	 */
+	 
 	
 	}
