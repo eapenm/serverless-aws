@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  studentgrading
+
+  Sample SAM Template for studentgrading
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 40
+    MemorySize: 512
+    Runtime: java11
+    Architectures:
+      - x86_64
+
+Resources:
+  StudentGradeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
+  StudentGradingTopic:
+    Type: AWS::SNS::Topic    
+  GradeCalculatorFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: studentgrading
+      Handler: com.aws.lambda.studentgrading.GradeCalculator::handler
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt StudentGradingTopic.TopicName
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          STUDENT_TOPIC: !Ref StudentGradingTopic
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref StudentGradeBucket
+            Events: s3:ObjectCreated:*
+
+  ReportGradeFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: studentgrading
+      Handler: com.aws.lambda.studentgrading.ReportGenerator::handler
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref StudentGradingTopic

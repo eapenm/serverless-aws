@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'studentgrading
+
+  Sample SAM Template for studentgrading
+
+  '
+Globals:
+  Function:
+    Timeout: 40
+    MemorySize: 512
+    Runtime: java11
+    Architectures:
+    - x86_64
+Resources:
+  StudentGradeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
+  StudentGradingTopic:
+    Type: AWS::SNS::Topic
+  GradeCalculatorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GradeCalculatorFunction
+      Handler: com.aws.lambda.studentgrading.GradeCalculator::handler
+      Policies:
+      - S3ReadPolicy:
+          BucketName:
+            Fn::Sub: ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
+      - SNSPublishMessagePolicy:
+          TopicName:
+            Fn::GetAtt:
+            - StudentGradingTopic
+            - TopicName
+      Environment:
+        Variables:
+          STUDENT_TOPIC:
+            Ref: StudentGradingTopic
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: StudentGradeBucket
+            Events: s3:ObjectCreated:*
+    Metadata:
+      SamResourceId: GradeCalculatorFunction
+  ReportGradeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ReportGradeFunction
+      Handler: com.aws.lambda.studentgrading.ReportGenerator::handler
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic:
+              Ref: StudentGradingTopic
+    Metadata:
+      SamResourceId: ReportGradeFunction

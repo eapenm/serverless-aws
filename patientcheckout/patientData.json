@@ -1,0 +1,14 @@
+[
+    {
+        "firstName":"Eapen",
+        "middleName": "Palaparambil",
+        "lastName": "Mani",
+        "ssn": "1234456"
+    },
+    {
+        "firstName":"Robin",
+        "middleName": "Palaparambil",
+        "lastName": "Eapen",
+        "ssn": "9876533"
+    }
+]
