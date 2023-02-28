@@ -1,0 +1,21 @@
+[
+    {
+        "rollNo":"97CS01",
+		"name": "Eapen Mani",
+		"testScore":89
+    },
+    {
+        "rollNo":"97CS02",
+		"name": "Joe Eapen Mani",
+		"testScore":95
+    },
+    {
+        "rollNo":"97CS03",
+		"name": "Deepa Mathew",
+		"testScore":75
+    },
+    {
+        "rollNo":"97CS04",
+		"name": "Diya Eapen",
+		"testScore":65
+    }

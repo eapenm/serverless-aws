@@ -15,6 +15,12 @@ Globals:
       - x86_64
 
 Resources:
+  CliamManagementQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 60
+  StudentGradingDLQ:
+    Type: AWS::SNS::Topic
   StudentGradeBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -26,6 +32,9 @@ Resources:
     Properties:
       CodeUri: studentgrading
       Handler: com.aws.lambda.studentgrading.GradeCalculator::handler
+      DeadLetterQueue:
+        Type: SNS
+        TargetArn: !Ref StudentGradingDLQ
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}-${AWS::Region}
@@ -51,3 +60,25 @@ Resources:
           Type: SNS
           Properties:
             Topic: !Ref StudentGradingTopic
+
+  ErrorHandlingFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: studentgrading
+      Handler: com.aws.lambda.studentgrading.errorhandling.ErrorHandler::handler
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref StudentGradingDLQ
+  ClaimManagementFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: studentgrading
+      Handler: com.aws.lambda.studentgrading.sqs.ClaimManagementLambda::handler
+      Events:
+        ClaimEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt CliamManagementQueue.Arn
+            BatchSize: 10            
